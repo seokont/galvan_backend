@@ -1,0 +1,33 @@
+name: atelier
+services:
+  postgres:
+    image: postgres:18-bookworm
+    restart: unless-stopped
+    env_file: .postgres.env
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U atelier -d atelier"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    init: true
+    env_file: .backend.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3001:3001"
+    volumes:
+      - ./storage/catalog:/app/storage/catalog
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3001/catalog/facets').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+volumes:
+  postgres-data:
