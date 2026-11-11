@@ -1,6 +1,10 @@
 # Atelier backend deployment
 
-Backend: https://store.fashiongroup.online
+Backend: https://backstore.fashiongroup.online
+
+Domain changed on 2026-11-11. The old `store.fashiongroup.online` origin remains
+available temporarily so existing Vercel deployments keep working. Update the
+Vercel BACKEND_URL and redeploy before retiring or reusing that domain.
 
 Server: 169.58.50.19, application directory `/opt/atelier`.
 Frontend is intended for Vercel and was not deployed in this operation.
@@ -11,7 +15,7 @@ Set project Root Directory to `frontend` and add the server-only environment
 variable in the Production and Preview environments:
 
 ```dotenv
-BACKEND_URL=https://store.fashiongroup.online
+BACKEND_URL=https://backstore.fashiongroup.online
 ```
 
 Redeploy after changing environment variables. For a fixed production frontend
@@ -45,7 +49,7 @@ Do not run this Compose file with its `deploy/` folder as the project directory.
 - `storage/catalog`: permanent catalog files, UID/GID 1000 for backend writes.
 - Docker volume `atelier_postgres-data`: PostgreSQL data; no published DB port.
 - Backend listens on host `127.0.0.1:3001` behind Nginx.
-- `/etc/nginx/sites-available/store.fashiongroup.online`: dedicated domain config.
+- `/etc/nginx/sites-available/backstore.fashiongroup.online`: dedicated domain config.
 - Certbot certificate renewal is scheduled automatically.
 - `backups/initial-catalog.dump`: initial schema/data snapshot, no active sessions.
 
@@ -59,7 +63,7 @@ From `/opt/atelier`:
 ```sh
 docker compose ps
 docker compose logs --tail=100 backend
-docker compose exec -T -e DEPLOYMENT_URL=https://store.fashiongroup.online backend node scripts/check-deployment.mjs
+docker compose exec -T -e DEPLOYMENT_URL=https://backstore.fashiongroup.online backend node scripts/check-deployment.mjs
 ```
 
 For subsequent releases upload backend source (exclude `.env`, `storage`,
