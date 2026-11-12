@@ -22,27 +22,30 @@ export class CatalogSyncService implements OnModuleDestroy {
   }
   private async recover() {
     await this.db.query(
-      "UPDATE atelier_catalog.catalog_sync_runs SET status='failed',phase='failed',error='Синхронізацію перервано перезапуском або втратою зв’язку. Запустіть її знову.',finished_at=now() WHERE status='running' AND heartbeat_at<now()-interval '2 minutes'",
+      "UPDATE atelier_catalog.catalog_sync_runs SET status='failed',phase='failed',error='Synchronization was interrupted by a restart or lost connection. Please start it again.',finished_at=now() WHERE status='running' AND heartbeat_at<now()-interval '2 minutes'",
     );
   }
   async latest() {
     await this.recover();
-    return {
-      enabled: this.enabled(),
-      job:
-        (
-          await this.db.query(
-            'SELECT ' +
-              fields +
-              ' FROM atelier_catalog.catalog_sync_runs ORDER BY started_at DESC,id DESC LIMIT 1',
-          )
-        ).rows[0] ?? null,
-    };
+    const job =
+      (
+        await this.db.query(
+          'SELECT ' +
+            fields +
+            ' FROM atelier_catalog.catalog_sync_runs ORDER BY started_at DESC,id DESC LIMIT 1',
+        )
+      ).rows[0] ?? null;
+    if (
+      typeof job?.error === 'string' &&
+      /\p{Script=Cyrillic}/u.test(job.error)
+    )
+      job.error = 'Synchronization did not complete. Please try again.';
+    return { enabled: this.enabled(), job };
   }
   async start(adminId: number) {
     if (!this.enabled())
       throw new BadRequestException(
-        'На сервері не налаштовано доступ до Odoo.',
+        'Odoo access is not configured on the server.',
       );
     await this.recover();
     const id = randomUUID();
@@ -66,7 +69,7 @@ export class CatalogSyncService implements OnModuleDestroy {
       const failed = () => {
         void this.db
           .query(
-            "UPDATE atelier_catalog.catalog_sync_runs SET status='failed',phase='failed',error='Фоновий процес синхронізації зупинився. Повторіть спробу.',finished_at=now() WHERE id=$1 AND status='running'",
+            "UPDATE atelier_catalog.catalog_sync_runs SET status='failed',phase='failed',error='The background synchronization process stopped. Please try again.',finished_at=now() WHERE id=$1 AND status='running'",
             [id],
           )
           .catch(() => {});
@@ -76,7 +79,7 @@ export class CatalogSyncService implements OnModuleDestroy {
       child.once('exit', failed);
     } catch {
       await this.db.query(
-        "UPDATE atelier_catalog.catalog_sync_runs SET status='failed',phase='failed',error='Не вдалося запустити синхронізацію.',finished_at=now() WHERE id=$1",
+        "UPDATE atelier_catalog.catalog_sync_runs SET status='failed',phase='failed',error='Unable to start synchronization.',finished_at=now() WHERE id=$1",
         [id],
       );
     }

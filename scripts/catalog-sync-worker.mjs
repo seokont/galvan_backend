@@ -81,10 +81,10 @@ try {
         : 'SYNC_FAILED',
   });
   const safe = error.message?.startsWith('Another catalog')
-    ? 'Інший імпорт уже виконується. Спробуйте після його завершення.'
+    ? 'Another import is running. Please try again after it finishes.'
     : error.message?.startsWith('Odoo')
-      ? 'Не вдалося прочитати дані Odoo. Перевірте доступ і повторіть синхронізацію.'
-      : 'Синхронізацію не завершено. Наявний каталог збережено; перевірте журнал сервера та повторіть спробу.';
+      ? 'Unable to read Odoo data. Check access and try synchronizing again.'
+      : 'Synchronization did not complete. The existing catalog was preserved; check the server logs and try again.';
   await pool
     .query(
       "UPDATE atelier_catalog.catalog_sync_runs SET status='failed',phase='failed',error=$2,finished_at=now(),heartbeat_at=now() WHERE id=$1 AND status='running'",

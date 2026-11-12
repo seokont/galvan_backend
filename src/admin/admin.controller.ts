@@ -94,7 +94,7 @@ export class AdminProductsController {
     try {
       info = await stat(file);
     } catch {
-      throw new NotFoundException('Фото не найдено');
+      throw new NotFoundException('Photo not found');
     }
     const ext = filename.split('.').at(-1);
     return new StreamableFile(createReadStream(file), {

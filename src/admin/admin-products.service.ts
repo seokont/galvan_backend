@@ -56,7 +56,7 @@ export function productId(value: string) {
     !Number.isSafeInteger(Number(value)) ||
     Number(value) < 1
   )
-    throw new NotFoundException('Товар не найден');
+    throw new NotFoundException('Product not found');
   return Number(value);
 }
 
@@ -71,7 +71,7 @@ export class AdminProductsService {
       (typeof raw.visibility !== 'string' ||
         !['all', 'visible', 'hidden'].includes(raw.visibility))
     )
-      throw new BadRequestException('Недопустимая видимость');
+      throw new BadRequestException('Invalid visibility filter');
     const params: unknown[] = [];
     const where = ['true'];
     const bind = (v: unknown) => {
@@ -131,7 +131,7 @@ export class AdminProductsService {
       ),
     ]);
     const row = effective.rows[0];
-    if (!row) throw new NotFoundException('Товар не найден');
+    if (!row) throw new NotFoundException('Product not found');
     return {
       id: row.id,
       slug: row.slug,
@@ -153,11 +153,11 @@ export class AdminProductsService {
         'SELECT id FROM atelier_catalog.products WHERE id=$1 FOR UPDATE',
         [id],
       );
-      if (!locked.rows.length) throw new NotFoundException('Товар не найден');
+      if (!locked.rows.length) throw new NotFoundException('Product not found');
       const current = await this.get(id, db);
       if (current.version !== patch.version)
         throw new ConflictException(
-          'Товар изменён в другой вкладке. Обновите страницу перед сохранением',
+          'This product was changed in another tab. Reload it before saving',
         );
       const previous = await db.query(
         'SELECT changes FROM atelier_catalog.product_overrides WHERE product_id=$1',
@@ -178,7 +178,7 @@ export class AdminProductsService {
           ])
         ).rows.length
       )
-        throw new BadRequestException('Бренд не найден');
+        throw new BadRequestException('Brand not found');
       if (final.collectionKeys.length) {
         const rows = await db.query(
           'SELECT key FROM atelier_catalog.collections WHERE key=ANY($1::text[]) AND brand_slug=$2',
@@ -186,7 +186,7 @@ export class AdminProductsService {
         );
         if (rows.rows.length !== final.collectionKeys.length)
           throw new BadRequestException(
-            'Коллекции должны принадлежать выбранному бренду',
+            'Collections must belong to the selected brand',
           );
       }
       if (final.images.length) {
@@ -201,7 +201,7 @@ export class AdminProductsService {
         ]);
         if (final.images.some((name) => !allowed.has(name)))
           throw new BadRequestException(
-            'Используйте фото товара или загрузите новое изображение',
+            'Use an existing product photo or upload a new image',
           );
         for (const name of final.images) {
           try {
@@ -213,7 +213,7 @@ export class AdminProductsService {
               ),
             );
           } catch {
-            throw new BadRequestException('Файл изображения отсутствует');
+            throw new BadRequestException('The image file is missing');
           }
         }
       }
@@ -233,7 +233,7 @@ export class AdminProductsService {
         error.code === '55P03'
       )
         throw new ConflictException(
-          'Адреси товарів зараз оновлюються. Повторіть збереження за кілька секунд.',
+          'Product URLs are being updated. Try saving again in a few seconds.',
         );
       throw error;
     } finally {
@@ -243,7 +243,7 @@ export class AdminProductsService {
   async upload(file: Express.Multer.File | undefined, adminId: number) {
     if (!file || file.size > 8 * 1024 * 1024)
       throw new BadRequestException(
-        'Выберите фото JPEG, PNG или WebP размером до 8 МБ',
+        'Select a JPEG, PNG or WebP photo up to 8 MB',
       );
     let output: Buffer;
     try {
@@ -266,7 +266,7 @@ export class AdminProductsService {
         .toBuffer();
     } catch {
       throw new BadRequestException(
-        'Неверное изображение. Допустимы JPEG, PNG и WebP',
+        'Invalid image. Supported formats: JPEG, PNG and WebP',
       );
     }
     const filename =
@@ -289,11 +289,11 @@ export class AdminProductsService {
   }
   async imageExists(filename: string) {
     if (!IMAGE_NAME.test(filename))
-      throw new NotFoundException('Фото не найдено');
+      throw new NotFoundException('Photo not found');
     const result = await this.db.query(
       `SELECT 1 FROM atelier_catalog.effective_products WHERE images @> $1::jsonb UNION ALL SELECT 1 FROM atelier_catalog.products WHERE images @> $1::jsonb UNION ALL SELECT 1 FROM atelier_catalog.admin_media WHERE filename=$2 LIMIT 1`,
       [JSON.stringify([filename]), filename],
     );
-    if (!result.rows.length) throw new NotFoundException('Фото не найдено');
+    if (!result.rows.length) throw new NotFoundException('Photo not found');
   }
 }

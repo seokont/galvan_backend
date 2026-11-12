@@ -21,7 +21,7 @@ export class AdminAuthService {
       b.password.length > 256 ||
       !b.password
     )
-      throw new BadRequestException('Введите email и пароль');
+      throw new BadRequestException('Enter your email and password');
     const result = await this.db.query(
       'SELECT id,email,password_hash FROM atelier_catalog.admin_accounts WHERE email=$1',
       [b.email.trim().toLowerCase()],
@@ -33,7 +33,7 @@ export class AdminAuthService {
       account?.password_hash ?? (await this.dummyHash),
     );
     if (!account || !verified)
-      throw new UnauthorizedException('Неверный email или пароль');
+      throw new UnauthorizedException('Invalid email or password');
     const token = randomBytes(32).toString('base64url');
     await this.db.query(
       'DELETE FROM atelier_catalog.admin_sessions WHERE expires_at<now()',
@@ -48,14 +48,15 @@ export class AdminAuthService {
     header: string | undefined,
   ): Promise<{ id: number; email: string }> {
     const token = header?.match(/^Bearer ([A-Za-z0-9_-]{43})$/)?.[1];
-    if (!token)
-      throw new UnauthorizedException('Требуется вход администратора');
+    if (!token) throw new UnauthorizedException('Admin sign in required');
     const result = await this.db.query(
       'SELECT a.id,a.email FROM atelier_catalog.admin_sessions s JOIN atelier_catalog.admin_accounts a ON a.id=s.admin_id WHERE s.token_hash=$1 AND s.expires_at>now()',
       [sessionHash(token)],
     );
     if (!result.rows[0])
-      throw new UnauthorizedException('Сессия истекла. Войдите снова');
+      throw new UnauthorizedException(
+        'Your session has expired. Please sign in again',
+      );
     return result.rows[0];
   }
   async logout(header: string | undefined) {

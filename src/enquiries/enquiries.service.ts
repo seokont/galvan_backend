@@ -131,7 +131,7 @@ export class EnquiriesService {
       )
         throw new NotFoundException('Enquiry not found');
       throw new ConflictException(
-        'Заявку вже змінено. Оновіть список і повторіть зміни.',
+        'This enquiry has already been updated. Refresh the list and try again.',
       );
     }
     return result.rows[0];

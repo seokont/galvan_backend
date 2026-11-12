@@ -27,7 +27,7 @@ function invalid(message: string): never {
 }
 function record(input: unknown): Record<string, unknown> {
   if (!input || typeof input !== 'object' || Array.isArray(input))
-    invalid('Ожидается объект');
+    invalid('Expected an object');
   return input as Record<string, unknown>;
 }
 function text(value: unknown, max: number, empty = true): string {
@@ -37,7 +37,7 @@ function text(value: unknown, max: number, empty = true): string {
     value.includes('\0') ||
     (!empty && !value.trim())
   )
-    invalid('Недопустимое текстовое значение');
+    invalid('Invalid text value');
   return value.trim();
 }
 function strings(
@@ -46,10 +46,9 @@ function strings(
   maxLength: number,
 ): string[] {
   if (!Array.isArray(value) || value.length > maxCount)
-    invalid('Слишком много значений');
+    invalid('Too many values');
   const result = value.map((v) => text(v, maxLength, false));
-  if (new Set(result).size !== result.length)
-    invalid('Значения не должны повторяться');
+  if (new Set(result).size !== result.length) invalid('Values must be unique');
   return result;
 }
 export function validateProductPatch(input: unknown): {
@@ -61,14 +60,14 @@ export function validateProductPatch(input: unknown): {
   if (
     Object.keys(body).some((k) => !['version', 'changes', 'reset'].includes(k))
   )
-    invalid('Неизвестное поле запроса');
+    invalid('Unknown request field');
   if (!Number.isSafeInteger(body.version) || Number(body.version) < 0)
-    invalid('Недопустимая версия товара');
+    invalid('Invalid product version');
   const raw = record(body.changes ?? {});
   const changes: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(raw)) {
     if (!(EDITABLE_FIELDS as readonly string[]).includes(key))
-      invalid('Поле недоступно для изменения: ' + key);
+      invalid('Field cannot be edited: ' + key);
     switch (key) {
       case 'name':
         changes.name = text(value, 250, false);
@@ -81,7 +80,7 @@ export function validateProductPatch(input: unknown): {
         break;
       case 'brandSlug': {
         const slug = text(value, 80, false);
-        if (!/^[a-z0-9-]+$/.test(slug)) invalid('Недопустимый бренд');
+        if (!/^[a-z0-9-]+$/.test(slug)) invalid('Invalid brand');
         changes.brandSlug = slug;
         break;
       }
@@ -89,14 +88,12 @@ export function validateProductPatch(input: unknown): {
         changes.silhouette = text(value, 100);
         break;
       case 'visible':
-        if (typeof value !== 'boolean')
-          invalid('Видимость должна быть логическим значением');
+        if (typeof value !== 'boolean') invalid('Visibility must be a boolean');
         changes.visible = value;
         break;
       case 'images': {
         const names = strings(value, 30, 80);
-        if (names.some((n) => !IMAGE_NAME.test(n)))
-          invalid('Недопустимое фото');
+        if (names.some((n) => !IMAGE_NAME.test(n))) invalid('Invalid photo');
         changes.images = names;
         break;
       }
@@ -105,17 +102,17 @@ export function validateProductPatch(input: unknown): {
         break;
       case 'attributes': {
         if (!Array.isArray(value) || value.length > 60)
-          invalid('Слишком много характеристик');
+          invalid('Too many attributes');
         const names = new Set<string>();
         changes.attributes = value.map((item) => {
           const attr = record(item);
           if (Object.keys(attr).some((k) => !['name', 'values'].includes(k)))
-            invalid('Неизвестное поле характеристики');
+            invalid('Unknown attribute field');
           const name = text(attr.name, 120, false);
           if (name.toLowerCase() === 'silhouette')
-            invalid('Силуэт редактируется отдельным полем выше');
+            invalid('Edit the silhouette in its separate field above');
           if (names.has(name.toLowerCase()))
-            invalid('Названия характеристик не должны повторяться');
+            invalid('Attribute names must be unique');
           names.add(name.toLowerCase());
           return { name, values: strings(attr.values, 100, 250) };
         });
@@ -133,6 +130,6 @@ export function validateProductPatch(input: unknown): {
         !(EDITABLE_FIELDS as readonly string[]).includes(k) || k in changes,
     )
   )
-    invalid('Недопустимый сброс поля');
+    invalid('Invalid field reset');
   return { version: Number(body.version), changes, reset };
 }
