@@ -129,7 +129,7 @@ export class CatalogService {
     if (!/^[a-z0-9-]{1,100}$/.test(slug))
       throw new NotFoundException('Product not found');
     const result = await this.pool.query<ProductRow>(
-      `${SELECT} WHERE p.visible=true AND (p.slug=$1 OR p.legacy_slug=$1) ORDER BY p.id LIMIT 1`,
+      `${SELECT} WHERE p.visible=true AND (p.slug=$1 OR EXISTS (SELECT 1 FROM atelier_catalog.product_slug_aliases a WHERE a.product_id=p.id AND a.slug=$1)) ORDER BY p.id LIMIT 1`,
       [slug],
     );
     if (!result.rows[0]) throw new NotFoundException('Product not found');

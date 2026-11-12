@@ -18,6 +18,9 @@ const product = {
   writeDate: '2026-01-01',
 };
 describe('incremental source content comparison', () => {
+  it('ignores site-owned canonical URL changes', () => {
+    expect(changedProduct(product, { ...product, slug: 'dress' })).toBe(false);
+  });
   it('ignores source timestamps and treats equivalent object key order equally', () => {
     expect(
       changedProduct(product, { ...product, writeDate: '2026-02-02' }),

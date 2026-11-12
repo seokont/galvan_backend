@@ -226,6 +226,15 @@ export class AdminProductsService {
       return result;
     } catch (error) {
       await db.query('ROLLBACK');
+      if (
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        error.code === '55P03'
+      )
+        throw new ConflictException(
+          'Адреси товарів зараз оновлюються. Повторіть збереження за кілька секунд.',
+        );
       throw error;
     } finally {
       db.release();

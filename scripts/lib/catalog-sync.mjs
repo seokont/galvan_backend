@@ -25,7 +25,6 @@ export function catalogSnapshot(p) {
   return JSON.stringify(
     ordered({
       id: p.id,
-      slug: p.slug,
       legacySlug: p.legacySlug,
       name: p.name,
       sku: p.sku,
@@ -330,7 +329,7 @@ export async function syncCatalog({
           [p.brand.slug, p.brand.name],
         );
         await db.query(
-          `INSERT INTO atelier_catalog.products(id,slug,legacy_slug,name,sku,brand_slug,silhouette,description,attributes,images,category_path,category_paths,variant_count,source_write_date) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11,$12::jsonb,$13,$14) ON CONFLICT(id) DO UPDATE SET slug=EXCLUDED.slug,legacy_slug=EXCLUDED.legacy_slug,name=EXCLUDED.name,sku=EXCLUDED.sku,brand_slug=EXCLUDED.brand_slug,silhouette=EXCLUDED.silhouette,description=EXCLUDED.description,attributes=EXCLUDED.attributes,images=EXCLUDED.images,category_path=EXCLUDED.category_path,category_paths=EXCLUDED.category_paths,variant_count=EXCLUDED.variant_count,source_write_date=EXCLUDED.source_write_date,visible=true,imported_at=now()`,
+          `INSERT INTO atelier_catalog.products(id,slug,legacy_slug,name,sku,brand_slug,silhouette,description,attributes,images,category_path,category_paths,variant_count,source_write_date) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11,$12::jsonb,$13,$14) ON CONFLICT(id) DO UPDATE SET legacy_slug=EXCLUDED.legacy_slug,name=EXCLUDED.name,sku=EXCLUDED.sku,brand_slug=EXCLUDED.brand_slug,silhouette=EXCLUDED.silhouette,description=EXCLUDED.description,attributes=EXCLUDED.attributes,images=EXCLUDED.images,category_path=EXCLUDED.category_path,category_paths=EXCLUDED.category_paths,variant_count=EXCLUDED.variant_count,source_write_date=EXCLUDED.source_write_date,visible=true,imported_at=now()`,
           [
             p.id,
             p.slug,
