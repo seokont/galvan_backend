@@ -28,3 +28,12 @@ Run `npm run build`, `npm test`, `npm run catalog:check-urls` and
 `npm run catalog:check-sync`. URL integration checks use a rolled-back transaction
 and create no persistent test products. Back up the production database before
 applying migration 005; deploy backend/DB before frontend redirects.
+
+## Production verification — 2026-11-12
+
+All 1,273 visible products have unique valid name URLs. Sampled historical Odoo
+aliases resolve the same product IDs. A real browser redirected
+`/products/odoo-40760` to `/products/0034-scarf`, with correct product title,
+loaded image and canonical metadata. The catalog's first 24 cards use name URLs.
+All 4,541 referenced image files passed regression checks. Both repositories
+are published and the frontend/backend deployments are live.
