@@ -13,6 +13,8 @@ import {
   AdminEnquiriesController,
 } from '../enquiries/enquiries.controller.js';
 import { EnquiriesService } from '../enquiries/enquiries.service.js';
+import { CatalogSyncService } from '../catalog-sync/catalog-sync.service.js';
+import { CatalogSyncController } from '../catalog-sync/catalog-sync.controller.js';
 @Module({
   imports: [
     ThrottlerModule.forRoot([
@@ -36,12 +38,14 @@ import { EnquiriesService } from '../enquiries/enquiries.service.js';
     AdminProductsController,
     PublicEnquiriesController,
     AdminEnquiriesController,
+    CatalogSyncController,
   ],
   providers: [
     AdminAuthService,
     AdminGuard,
     AdminProductsService,
     EnquiriesService,
+    CatalogSyncService,
   ],
 })
 export class AdminModule {}
