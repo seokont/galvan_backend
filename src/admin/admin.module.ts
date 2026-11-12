@@ -8,6 +8,11 @@ import { AdminAuthService } from './admin-auth.service.js';
 import { AdminGuard } from './admin.guard.js';
 import { AdminProductsService } from './admin-products.service.js';
 import { sessionHash } from './password.js';
+import {
+  PublicEnquiriesController,
+  AdminEnquiriesController,
+} from '../enquiries/enquiries.controller.js';
+import { EnquiriesService } from '../enquiries/enquiries.service.js';
 @Module({
   imports: [
     ThrottlerModule.forRoot([
@@ -26,7 +31,17 @@ import { sessionHash } from './password.js';
       },
     ]),
   ],
-  controllers: [AdminAuthController, AdminProductsController],
-  providers: [AdminAuthService, AdminGuard, AdminProductsService],
+  controllers: [
+    AdminAuthController,
+    AdminProductsController,
+    PublicEnquiriesController,
+    AdminEnquiriesController,
+  ],
+  providers: [
+    AdminAuthService,
+    AdminGuard,
+    AdminProductsService,
+    EnquiriesService,
+  ],
 })
 export class AdminModule {}

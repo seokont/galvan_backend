@@ -8,6 +8,7 @@
   "type": "module",
   "scripts": {
     "db:migrate": "node scripts/migrate.mjs",
+    "crm:check": "node scripts/check-enquiries.mjs",
     "admin:setup": "node scripts/setup-admin.mjs",
     "admin:check": "node scripts/check-admin.mjs",
     "admin:check-proxy": "node scripts/check-admin-proxy.mjs",

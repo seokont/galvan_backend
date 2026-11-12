@@ -1,0 +1,46 @@
+import 'reflect-metadata';
+import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
+import { loadEnvFile } from 'node:process';
+import { randomBytes, randomUUID } from 'node:crypto';
+import { NestFactory } from '@nestjs/core';
+import { Pool } from 'pg';
+if(existsSync('.env'))loadEnvFile('.env');
+const {AppModule}=await import('../dist/app.module.js');
+const {sessionHash}=await import('../dist/admin/password.js');
+const app=await NestFactory.create(AppModule,{logger:false});
+const db=app.get(Pool);
+const email='crm-check-'+randomUUID()+'@example.invalid';
+const token=randomBytes(32).toString('base64url');
+try{
+  await app.listen(0,'127.0.0.1');
+  const base=await app.getUrl();
+  const call=(path,method='GET',body,auth=false)=>fetch(base+path,{method,headers:{'content-type':'application/json',...(auth?{authorization:'Bearer '+token}:{})},body:body===undefined?undefined:JSON.stringify(body)});
+  assert.equal((await call('/admin/enquiries')).status,401);
+  assert.equal((await call('/enquiries')).status,404);
+  const body={submissionId:randomUUID(),name:'AUTOMATED CRM CHECK — NOT A CUSTOMER',email,phone:'+380 00 000 0000',subject:'Integration check',message:'Synthetic test enquiry. Automatically removed.'};
+  assert.equal((await call('/enquiries','POST',{...body,email:'invalid'})).status,400);
+  assert.equal((await call('/enquiries','POST',body)).status,201);
+  assert.equal((await call('/enquiries','POST',body)).status,201);
+  assert.equal((await call('/enquiries','POST',{...body,message:'Changed draft'})).status,409);
+  assert.equal((await db.query('SELECT count(*)::int AS n FROM atelier_catalog.enquiries WHERE email=$1',[email])).rows[0].n,1);
+  assert.equal((await call('/enquiries','POST',{...body,submissionId:randomUUID(),website:'spam.example'})).status,201);
+  assert.equal((await db.query('SELECT count(*)::int AS n FROM atelier_catalog.enquiries WHERE email=$1',[email])).rows[0].n,1);
+  const admin=(await db.query('SELECT id FROM atelier_catalog.admin_accounts LIMIT 1')).rows[0];assert.ok(admin);
+  await db.query("INSERT INTO atelier_catalog.admin_sessions(token_hash,admin_id,expires_at) VALUES($1,$2,now()+interval '5 minutes')",[sessionHash(token),admin.id]);
+  const response=await call('/admin/enquiries?q='+encodeURIComponent(email),'GET',undefined,true);assert.equal(response.status,200);
+  assert.match(response.headers.get('cache-control'),/no-store/);
+  const page=await response.json();assert.equal(page.total,1);const entry=page.items[0];
+  assert.equal(entry.message,body.message);assert.equal(entry.phone,body.phone);
+  assert.equal((await call('/admin/enquiries/'+entry.id,'PATCH',{status:'in_progress',notes:'Called the customer',version:entry.version},true)).status,200);
+  assert.equal((await call('/admin/enquiries/'+entry.id,'PATCH',{status:'closed',notes:'stale change',version:entry.version},true)).status,409);
+  assert.equal((await call('/admin/enquiries/'+entry.id,'PATCH',{status:'new',notes:'',version:2})).status,401);
+  const stored=(await db.query('SELECT status,notes FROM atelier_catalog.enquiries WHERE id=$1',[entry.id])).rows[0];assert.deepEqual(stored,{status:'in_progress',notes:'Called the customer'});
+  for(let i=0;i<2;i++)assert.equal((await call('/enquiries','POST',{...body,submissionId:randomUUID()})).status,201);
+  assert.equal((await call('/enquiries','POST',{...body,submissionId:randomUUID()})).status,429);
+  console.log('CRM integration OK: persistence, idempotency, honeypot, validation, admin auth, status/notes, conflict detection and submission limit.');
+}finally{
+  await db.query('DELETE FROM atelier_catalog.enquiries WHERE email=$1',[email]);
+  await db.query('DELETE FROM atelier_catalog.admin_sessions WHERE token_hash=$1',[sessionHash(token)]);
+  await app.close();
+}
