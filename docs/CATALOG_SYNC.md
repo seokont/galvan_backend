@@ -52,3 +52,12 @@ records; they do not send any request to Odoo. CLI import uses the same engine:
 
 For failed jobs, use `docker compose logs --tail=100 backend` from `/opt/atelier`.
 Logs contain a job ID, phase and a safe error code, never source credentials.
+
+## Verified in production — 2026-11-12
+
+Started from the real settings button through Vercel. Duplicate start requests
+reused the same running job, progress survived reload, and the 390px layout had
+no horizontal overflow. First sync: 1,273 checked, 1 updated, 1,272 unchanged,
+no new models. Repeat: all 1,273 unchanged, zero photo downloads. All 4,541
+referenced catalogue image files remained accessible; unauthenticated sync API
+requests return 401. The temporary QA session was removed after verification.
