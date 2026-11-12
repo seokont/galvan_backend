@@ -27,3 +27,13 @@ its own test data. Apply migration 003 before deploying the new frontend.
 Data is retained until an operator's retention policy removes it; there is no
 delete UI. Access is restricted to administrators. Include enquiries in database
 backups; don't log messages, email addresses, authentication tokens or passwords.
+
+## Verified deployment — 2026-11-12
+
+Backend and frontend deployed. A real contact-form submission on
+https://store.fashiongroup.online/contact appeared in `/admin/enquiries`.
+Status and notes persisted; another open card's unsaved notes survived saving.
+Mobile width 390px had no horizontal overflow. Unauthenticated API access
+returns 401 and the admin page redirects to login. QA rows/session were removed.
+Backend tests: 21 passed; real PostgreSQL integration, lint and both builds pass.
+The existing catalog and photos passed regression checks after deployment.
